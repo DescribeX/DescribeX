@@ -63,12 +63,12 @@ api_key = os.environ.get("FIREWORKS_API_KEY", "")
 FIREWORKS_URL = "https://api.fireworks.ai/inference/v1/chat/completions"
 
 VISION_MODELS = [
-    "accounts/fireworks/models/llama-v3p2-11b-vision-instruct",
-    "accounts/fireworks/models/llama-v3p2-90b-vision-instruct",
+    "accounts/fireworks/models/kimi-k2p6",
+    "accounts/fireworks/models/kimi-k2p5",
 ]
 TEXT_MODELS = [
-    "accounts/fireworks/models/llama-v3p1-8b-instruct",
-    "accounts/fireworks/models/llama-v3p1-70b-instruct",
+    "accounts/fireworks/models/deepseek-v4-pro",
+    "accounts/fireworks/models/glm-5p2",
 ]
 
 if api_key:
@@ -192,6 +192,47 @@ def extract_frames(video_path: str, num_frames: int = 8) -> List[str]:
     logger.info(f"Extracted {len(frames_b64)} frames from {video_path}")
     return frames_b64
 
+
+
+def parse_captions_json(text: str) -> Optional[dict]:
+    # Pre-cleanup: remove markdown code block backticks if present
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    cleaned = cleaned.strip()
+
+    # Try normal json.loads first
+    try:
+        return json.loads(cleaned)
+    except Exception as e:
+        logger.warning(f"Standard JSON parse failed: {e}. Trying regex extraction...")
+
+    # Fallback: regex extraction
+    keys = ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]
+    result = {}
+    import re
+    
+    # Try finding each key-value pair using a regex that captures everything inside the quotes
+    for k in keys:
+        pattern = rf'"{k}"\s*:\s*"(.*?)"(?=\s*,\s*"|\s*\}}|\s*$)'
+        match = re.search(pattern, cleaned, re.DOTALL)
+        if match:
+            val = match.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
+            result[k] = val
+        else:
+            pattern_alt = rf'[\'"]?{k}[\'"]?\s*:\s*[\'"](.*?)[\'"](?=\s*,\s*[\'"]|\s*\}}|\s*$)'
+            match_alt = re.search(pattern_alt, cleaned, re.DOTALL)
+            if match_alt:
+                val = match_alt.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
+                result[k] = val
+                
+    if all(k in result for k in keys):
+        return result
+    return None
 
 # ─── Fireworks API Helper ────────────────────────────────────────────────────
 
@@ -377,7 +418,7 @@ async def sse_generator(task_id: str):
                         )
                     )
                     text = result["choices"][0]["message"]["content"].strip()
-                    captions_data = json.loads(text)
+                    captions_data = parse_captions_json(text)
 
                     # Validate all 4 keys exist with content
                     required = ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]

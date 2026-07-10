@@ -43,15 +43,55 @@ START_TIME   = time.time()
 
 FIREWORKS_URL = "https://api.fireworks.ai/inference/v1/chat/completions"
 
-# Models ordered by capability (escalation ladder)
 VISION_MODELS = [
-    "accounts/fireworks/models/llama-v3p2-11b-vision-instruct",
-    "accounts/fireworks/models/llama-v3p2-90b-vision-instruct",
+    "accounts/fireworks/models/kimi-k2p6",
+    "accounts/fireworks/models/kimi-k2p5",
 ]
 TEXT_MODELS = [
-    "accounts/fireworks/models/llama-v3p1-8b-instruct",
-    "accounts/fireworks/models/llama-v3p1-70b-instruct",
+    "accounts/fireworks/models/deepseek-v4-pro",
+    "accounts/fireworks/models/glm-5p2",
 ]
+
+
+def parse_captions_json(text: str) -> Optional[dict]:
+    # Pre-cleanup: remove markdown code block backticks if present
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    cleaned = cleaned.strip()
+
+    # Try normal json.loads first
+    try:
+        return json.loads(cleaned)
+    except Exception as e:
+        print(f"[parser] Standard JSON parse failed: {e}. Trying regex extraction...")
+
+    # Fallback: regex extraction
+    keys = ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]
+    result = {}
+    import re
+    
+    # Try finding each key-value pair using a regex that captures everything inside the quotes
+    for k in keys:
+        pattern = rf'"{k}"\s*:\s*"(.*?)"(?=\s*,\s*"|\s*\}}|\s*$)'
+        match = re.search(pattern, cleaned, re.DOTALL)
+        if match:
+            val = match.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
+            result[k] = val
+        else:
+            pattern_alt = rf'[\'"]?{k}[\'"]?\s*:\s*[\'"](.*?)[\'"](?=\s*,\s*[\'"]|\s*\}}|\s*$)'
+            match_alt = re.search(pattern_alt, cleaned, re.DOTALL)
+            if match_alt:
+                val = match_alt.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
+                result[k] = val
+                
+    if all(k in result for k in keys):
+        return result
+    return None
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -282,7 +322,7 @@ class CaptionAgent:
                     )
                 )
                 text = result["choices"][0]["message"]["content"].strip()
-                data = json.loads(text)
+                data = parse_captions_json(text)
                 
                 # Validate all required styles are present
                 captions = {}
@@ -345,7 +385,7 @@ class CaptionAgent:
                     )
                 )
                 text = result["choices"][0]["message"]["content"].strip()
-                data = json.loads(text)
+                data = parse_captions_json(text)
                 
                 captions = {}
                 for style in styles:
