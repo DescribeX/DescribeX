@@ -9,7 +9,7 @@ ENV TEMP_DIR=/tmp
 
 # Install system dependencies for OpenCV headless
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libglib2.0-0 libgl1-mesa-glx && \
+    apt-get install -y --no-install-recommends libglib2.0-0 libgl1 && \
     rm -rf /var/lib/apt/lists/*
 
 # Create input and output directories (to match evaluation volumes)

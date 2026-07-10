@@ -1,0 +1,11 @@
+[
+  {
+    "task_id": "v1",
+    "captions": {
+      "formal": "This footage captures a bustling thoroughfare in Seoul during the golden hour of an autumn day. The scene is framed by brilliant yellow ginkgo trees that line the multi-lane road, their foliage glowing in the warm sunlight. A steady stream of vehicles moves in both directions, their motion blurred into streaks of light by a long exposure, while the high-rise apartments and distant mountains remain sharply defined. The orderly flow of traffic, punctuated by changing signals and the prominent 'KOREA ELECTRIC ENGINEERING' sign, conveys the rhythmic pulse of the city.",
+      "sarcastic": "Ah, the breathtaking view of a 'KOREA ELECTRIC ENGINEERING' building, truly the landmark everyone dreams of. The traffic is moving with all the urgency of a sloth on vacation, but at least the motion blur makes the endless line of cars look almost artistic. Those golden leaves are doing their best to distract from the fact that you're still just sitting in a metal box, inching forward.",
+      "humorous_tech": "This is a real-time visualization of a poorly optimized data pipeline. The cars are packets experiencing severe latency, and the traffic lights are a state machine stuck in a loop with no break condition. The motion blur is just a rendering glitch from the GPU trying to smooth over the fact that the system is completely overloaded. Someone should really file a bug report for that intersection.",
+      "humorous_non_tech": "Nothing says 'perfect fall day' like admiring the gorgeous yellow leaves while you're bumper-to-bumper with a bus. The trees are putting on a five-star show, but the audience is too busy staring at the license plate in front of them. It's nature's way of saying, 'I made this beautiful season, and you chose to spend it on the highway.'"
+    }
+  }
+]
