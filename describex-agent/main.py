@@ -15,6 +15,24 @@ from typing import Dict, List, Optional
 import requests
 import cv2
 
+def load_env():
+    # Look for .env in current, parent, or grandparent directories
+    for path in [".env", "../.env", "../../.env"]:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            k, v = line.split('=', 1)
+                            os.environ[k.strip()] = v.strip().strip('"').strip("'")
+                print(f"[init] Loaded environment variables from: {os.path.abspath(path)}")
+                break
+            except Exception as e:
+                print(f"[init] Error reading {path}: {e}")
+
+load_env()
+
 # ─── Configuration ───────────────────────────────────────────────────────────
 INPUT_PATH  = os.environ.get("INPUT_TASKS_PATH", "/input/tasks.json")
 OUTPUT_PATH = os.environ.get("OUTPUT_RESULTS_PATH", "/output/results.json")

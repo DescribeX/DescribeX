@@ -23,6 +23,24 @@ import cv2
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("describex-backend")
 
+def load_env():
+    # Look for .env in current, parent, or grandparent directories
+    for path in [".env", "../.env", "../../.env"]:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            k, v = line.split('=', 1)
+                            os.environ[k.strip()] = v.strip().strip('"').strip("'")
+                logger.info(f"Loaded environment variables from: {os.path.abspath(path)}")
+                break
+            except Exception as e:
+                logger.error(f"Error reading {path}: {e}")
+
+load_env()
+
 # ─── App ─────────────────────────────────────────────────────────────────────
 app = FastAPI(title="DescribeX Backend", version="2.0")
 
