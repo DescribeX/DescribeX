@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: describex-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: FIREWORKS_API_KEY
+        sync: false  # You must set this manually in the Render dashboard
+      - key: PYTHON_VERSION
+        value: "3.12"
