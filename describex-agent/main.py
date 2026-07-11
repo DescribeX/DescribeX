@@ -48,8 +48,7 @@ VISION_MODELS = [
     "accounts/fireworks/models/kimi-k2p5",
 ]
 TEXT_MODELS = [
-    "accounts/fireworks/models/gemma-3-27b-it",
-    "accounts/fireworks/models/gemma-3-12b-it",
+    "accounts/fireworks/models/gpt-oss-20b",
     "accounts/fireworks/models/deepseek-v4-flash",
 ]
 
@@ -321,7 +320,7 @@ class CaptionAgent:
                     lambda m=model: call_fireworks(
                         self.api_key, m, messages,
                         temperature=0.7, max_tokens=1528,
-                        json_mode=True, timeout=30
+                        json_mode=False, timeout=30
                     )
                 )
                 text = result["choices"][0]["message"]["content"].strip()
