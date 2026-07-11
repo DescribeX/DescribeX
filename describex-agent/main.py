@@ -48,9 +48,9 @@ VISION_MODELS = [
     "accounts/fireworks/models/kimi-k2p5",
 ]
 TEXT_MODELS = [
-    "accounts/fireworks/models/llama-v3p3-70b-instruct",
-    "accounts/fireworks/models/llama-v3p1-8b-instruct",
-    "accounts/fireworks/models/deepseek-v4-pro",
+    "accounts/fireworks/models/gemma-3-27b-it",
+    "accounts/fireworks/models/gemma-3-12b-it",
+    "accounts/fireworks/models/deepseek-v4-flash",
 ]
 
 
