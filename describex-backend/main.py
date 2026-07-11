@@ -67,8 +67,8 @@ VISION_MODELS = [
     "accounts/fireworks/models/kimi-k2p5",
 ]
 TEXT_MODELS = [
-    "accounts/fireworks/models/gpt-oss-20b",
     "accounts/fireworks/models/deepseek-v4-flash",
+    "accounts/fireworks/models/gpt-oss-20b",
 ]
 
 if api_key:
