@@ -48,14 +48,17 @@ VISION_MODELS = [
     "accounts/fireworks/models/kimi-k2p5",
 ]
 TEXT_MODELS = [
+    "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "accounts/fireworks/models/llama-v3p1-8b-instruct",
     "accounts/fireworks/models/deepseek-v4-pro",
-    "accounts/fireworks/models/glm-5p2",
 ]
 
 
 def parse_captions_json(text: str) -> Optional[dict]:
-    # Pre-cleanup: remove markdown code block backticks if present
+    # Pre-cleanup: remove reasoning traces and markdown code block backticks if present
     cleaned = text.strip()
+    if "</think>" in cleaned:
+        cleaned = cleaned.split("</think>", 1)[1].strip()
     if cleaned.startswith("```json"):
         cleaned = cleaned[7:]
     if cleaned.startswith("```"):
@@ -317,7 +320,7 @@ class CaptionAgent:
                     None,
                     lambda m=model: call_fireworks(
                         self.api_key, m, messages,
-                        temperature=0.7, max_tokens=800,
+                        temperature=0.7, max_tokens=1528,
                         json_mode=True, timeout=30
                     )
                 )

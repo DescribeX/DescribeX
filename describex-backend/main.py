@@ -67,8 +67,9 @@ VISION_MODELS = [
     "accounts/fireworks/models/kimi-k2p5",
 ]
 TEXT_MODELS = [
+    "accounts/fireworks/models/llama-v3p3-70b-instruct",
+    "accounts/fireworks/models/llama-v3p1-8b-instruct",
     "accounts/fireworks/models/deepseek-v4-pro",
-    "accounts/fireworks/models/glm-5p2",
 ]
 
 if api_key:
@@ -195,8 +196,10 @@ def extract_frames(video_path: str, num_frames: int = 8) -> List[str]:
 
 
 def parse_captions_json(text: str) -> Optional[dict]:
-    # Pre-cleanup: remove markdown code block backticks if present
+    # Pre-cleanup: remove reasoning traces and markdown code block backticks if present
     cleaned = text.strip()
+    if "</think>" in cleaned:
+        cleaned = cleaned.split("</think>", 1)[1].strip()
     if cleaned.startswith("```json"):
         cleaned = cleaned[7:]
     if cleaned.startswith("```"):
@@ -413,7 +416,7 @@ async def sse_generator(task_id: str):
                         None,
                         lambda m=tmodel: call_fireworks(
                             m, style_messages,
-                            temperature=0.7, max_tokens=800,
+                            temperature=0.7, max_tokens=1528,
                             json_mode=True, timeout=30
                         )
                     )
