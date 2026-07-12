@@ -67,7 +67,7 @@ VISION_MODELS = [
     "accounts/fireworks/models/kimi-k2p5",
 ]
 TEXT_MODELS = [
-    "accounts/fireworks/models/deepseek-v4-flash",
+    "accounts/fireworks/models/qwen3p7-plus",
     "accounts/fireworks/models/gpt-oss-20b",
 ]
 
@@ -89,22 +89,63 @@ Provide a DETAILED scene description covering:
 
 Be thorough and factual. This description will be used to generate captions, so accuracy is critical. Write 150-250 words."""
 
-STAGE2_PROMPT = """Based on this video description, generate captions in exactly four styles.
+STAGE2_PROMPT = """You are a precise, professional caption writer.
+Your task is NOT to analyze a video, but ONLY to rewrite the provided verified factual scene description into exactly four styles.
 
 VIDEO DESCRIPTION:
 {description}
 
-STYLES REQUIRED:
-1. **formal**: Professional, objective, factual tone. Describe what the video shows as if writing for a documentary or news broadcast. Use precise, measured language.
-2. **sarcastic**: Dry, ironic, lightly mocking tone. Find something amusing or underwhelming about the scene and comment on it with subtle wit. Don't be mean-spirited.
-3. **humorous_tech**: Write a funny caption that incorporates technology, programming, or software engineering references/metaphors. Connect the video content to tech concepts (debugging, APIs, git, frameworks, etc.) in a clever way.
-4. **humorous_non_tech**: Write a funny, relatable, everyday humor caption. No technical jargon at all. Think observations a comedian would make about the scene.
+CRITICAL RULES FOR FACTUAL INTEGRITY:
+- Never invent new facts or exaggerate.
+- Never remove important facts from the description.
+- Preserve every single factual observation from the description.
+- Do NOT infer locations, identities, professions, emotions, weather, season, relationships, or intentions unless they are explicitly stated in the description.
+- If uncertain about any detail, omit it rather than guessing or assuming.
+- Keep captions concise but descriptive (2-4 sentences, 40-120 words per style).
+- Maintain 100% factual accuracy grounded ONLY in the video description.
 
-RULES:
-- Each caption should be 2-4 sentences (40-120 words)
-- Captions must accurately reflect the VIDEO DESCRIPTION content
-- Each style must feel distinctly different in tone
-- Return ONLY a valid JSON object with exactly these four keys: formal, sarcastic, humorous_tech, humorous_non_tech"""
+STYLES REQUIRED:
+1. **formal**:
+   - Tone: Professional, objective, factual.
+   - Describe what the video shows as if writing for a documentary, news broadcast, or archiving system.
+   - Use precise, measured language with no humor, sarcasm, or exaggeration.
+
+2. **sarcastic**:
+   - Tone: Dry irony and lightly mocking.
+   - Find something amusing or underwhelming about the scene or the actions described and comment on it with subtle, dry wit.
+   - Must remain 100% factually correct based ONLY on the description. Do NOT fabricate events or invent storylines.
+
+3. **humorous_tech**:
+   - Tone: Funny with natural software engineering/programming humor.
+   - Connect the description content directly to software/system concepts in a clever way.
+   - Vary your references and do NOT repeat basic terms like "API", "legacy code", or "Docker".
+   - Ground jokes in visible facts. Rotate and use technical references naturally from this list:
+     * CI/CD
+     * cache miss
+     * race condition
+     * merge conflict
+     * latency
+     * kernel panic
+     * GPU
+     * segmentation fault
+     * thread pool
+     * memory leak
+     * deadlock
+     * stack overflow
+
+4. **humorous_non_tech**:
+   - Tone: Everyday relatable humor.
+   - Describe the scene with funny observations that a comedian would make about the situation.
+   - Do NOT use any technical jargon or programming references.
+   - Do NOT invent storylines; keep all jokes tightly connected to what is actually described as visible in the description.
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object. Do not wrap in markdown blocks other than ```json if needed, or simply output raw JSON. The JSON object must contain exactly these four keys:
+- "formal"
+- "sarcastic"
+- "humorous_tech"
+- "humorous_non_tech"
+"""
 
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
@@ -251,6 +292,8 @@ def call_fireworks(model: str, messages: list,
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
+    if "qwen3p7-plus" in model:
+        payload["reasoning_effort"] = "none"
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
 
@@ -416,7 +459,7 @@ async def sse_generator(task_id: str):
                         lambda m=tmodel: call_fireworks(
                             m, style_messages,
                             temperature=0.7, max_tokens=1528,
-                            json_mode=False, timeout=30
+                            json_mode=(m == "accounts/fireworks/models/qwen3p7-plus"), timeout=30
                         )
                     )
                     text = result["choices"][0]["message"]["content"].strip()
