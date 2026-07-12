@@ -536,7 +536,7 @@ class CaptionAgent:
         
         try:
             with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(output, f, indent=2, ensure_ascii=False)
+                json.dump(output, f, indent=2, ensure_ascii=True)
             # Validate
             with open(tmp, 'r', encoding='utf-8') as f:
                 json.load(f)
