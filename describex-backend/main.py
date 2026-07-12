@@ -255,33 +255,60 @@ def parse_captions_json(text: str) -> Optional[dict]:
         cleaned = cleaned[:-3]
     cleaned = cleaned.strip()
 
+    parsed = None
     # Try normal json.loads first
     try:
-        return json.loads(cleaned)
+        parsed = json.loads(cleaned)
     except Exception as e:
         logger.warning(f"Standard JSON parse failed: {e}. Trying regex extraction...")
 
-    # Fallback: regex extraction
-    keys = ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]
-    result = {}
-    import re
-    
-    # Try finding each key-value pair using a regex that captures everything inside the quotes
-    for k in keys:
-        pattern = rf'"{k}"\s*:\s*"(.*?)"(?=\s*,\s*"|\s*\}}|\s*$)'
-        match = re.search(pattern, cleaned, re.DOTALL)
-        if match:
-            val = match.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
-            result[k] = val
-        else:
-            pattern_alt = rf'[\'"]?{k}[\'"]?\s*:\s*[\'"](.*?)[\'"](?=\s*,\s*[\'"]|\s*\}}|\s*$)'
-            match_alt = re.search(pattern_alt, cleaned, re.DOTALL)
-            if match_alt:
-                val = match_alt.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
+    if not parsed:
+        # Fallback: regex extraction
+        keys = ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]
+        result = {}
+        import re
+        
+        # Try finding each key-value pair using a regex that captures everything inside the quotes
+        for k in keys:
+            pattern = rf'"{k}"\s*:\s*"(.*?)"(?=\s*,\s*"|\s*\}}|\s*$)'
+            match = re.search(pattern, cleaned, re.DOTALL)
+            if match:
+                val = match.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
                 result[k] = val
-                
-    if all(k in result for k in keys):
-        return result
+            else:
+                pattern_alt = rf'[\'"]?{k}[\'"]?\s*:\s*[\'"](.*?)[\'"](?=\s*,\s*[\'"]|\s*\}}|\s*$)'
+                match_alt = re.search(pattern_alt, cleaned, re.DOTALL)
+                if match_alt:
+                    val = match_alt.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
+                    result[k] = val
+                    
+        if all(k in result for k in keys):
+            parsed = result
+
+    if parsed:
+        # Normalize Unicode/smart punctuation to standard ASCII
+        replacements = {
+            '—': ' - ',  # Em dash
+            '–': '-',    # En dash
+            '’': "'",    # Smart single quote right
+            '‘': "'",    # Smart single quote left
+            '“': '"',    # Smart double quote left
+            '”': '"',    # Smart double quote right
+            '…': '...',  # Ellipsis
+        }
+        cleaned_parsed = {}
+        for k, v in parsed.items():
+            if isinstance(v, str):
+                v_clean = v
+                for orig, repl in replacements.items():
+                    v_clean = v_clean.replace(orig, repl)
+                while "  " in v_clean:
+                    v_clean = v_clean.replace("  ", " ")
+                cleaned_parsed[k] = v_clean.strip()
+            else:
+                cleaned_parsed[k] = v
+        return cleaned_parsed
+
     return None
 
 # ─── Fireworks API Helper ────────────────────────────────────────────────────
