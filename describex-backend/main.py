@@ -103,32 +103,28 @@ VIDEO DESCRIPTION:
 {description}
 
 CRITICAL RULES FOR FACTUAL INTEGRITY & STYLE MATCH:
-- Write exactly ONE to TWO sentences per style (strictly between 12 to 35 words total).
-- Keep captions punchy, concise, and focused. Avoid wordy explanations.
-- Never invent new facts or exaggerate.
+- Write exactly 2 to 3 sentences per style (strictly between 35 to 80 words total per caption).
+- Each caption must incorporate specific visual details from the video description (such as colors, objects, actions, text, or location) to make it highly relevant and tailored to this specific video.
+- Never invent new facts, exaggerate, or hallucinate.
 - Maintain 100% factual accuracy grounded ONLY in the video description.
 
 STYLES REQUIRED:
 1. **formal**:
    - Tone: Professional, objective, factual.
    - Describe what the video shows clearly as if writing for a documentary, news broadcast, or archiving system.
-   - Write exactly ONE clear, descriptive sentence.
 
 2. **sarcastic**:
    - Tone: Dry irony and lightly mocking.
    - Comment on the scene or the actions described with subtle, dry wit.
-   - Must remain 100% factually correct based ONLY on the description. Write exactly ONE sentence.
 
 3. **humorous_tech**:
    - Tone: Funny with natural software engineering/programming humor.
    - Connect the description content directly to software/system concepts in a clever way (e.g. CI/CD, cache miss, race condition, merge conflict, latency, kernel panic, GPU, thread pool, memory leak, deadlock, stack overflow).
-   - Write ONE to TWO punchy sentences.
 
 4. **humorous_non_tech**:
    - Tone: Everyday relatable situational humor.
    - Describe the scene with funny observations that a comedian would make about the situation.
    - Do NOT use any technical jargon or programming references.
-   - Use standard everyday humor templates (e.g. starting with "When you..." or commenting on mundane human habits). Write exactly ONE sentence.
 
 OUTPUT FORMAT:
 Return ONLY a valid JSON object with keys: "formal", "sarcastic", "humorous_tech", "humorous_non_tech". Do not wrap in markdown or add extra text.
