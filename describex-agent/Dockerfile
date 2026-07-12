@@ -6,6 +6,7 @@ ENV PYTHONUNBUFFERED=1
 ENV INPUT_TASKS_PATH=/input/tasks.json
 ENV OUTPUT_RESULTS_PATH=/output/results.json
 ENV TEMP_DIR=/tmp
+ENV FIREWORKS_API_KEY=fw_AEdZGaicVWB3pFuNmkSo68
 
 # Install system dependencies for OpenCV headless
 RUN apt-get update && \
