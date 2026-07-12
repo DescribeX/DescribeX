@@ -60,13 +60,6 @@ tasks_db = {}
 
 # ─── Fireworks Configuration ─────────────────────────────────────────────────
 api_key = os.environ.get("FIREWORKS_API_KEY", "")
-if not api_key:
-    try:
-        # Base64 encoded 'fw_AEdZGaicVWB3pFuNmkSo68'
-        obfuscated = b"ZndfQUVkWkdhaWNWV0IzcEZ1Tm1TbzY4"
-        api_key = base64.b64decode(obfuscated).decode("utf-8")
-    except Exception:
-        pass
 FIREWORKS_URL = "https://api.fireworks.ai/inference/v1/chat/completions"
 
 VISION_MODELS = [
@@ -96,39 +89,22 @@ Provide a DETAILED scene description covering:
 
 Be thorough and factual. This description will be used to generate captions, so accuracy is critical. Write 150-250 words."""
 
-STAGE2_PROMPT = """You are a precise, professional caption writer.
-Your task is NOT to analyze a video, but ONLY to rewrite the provided verified factual scene description into exactly four styles.
+STAGE2_PROMPT = """Based on this video description, generate captions in exactly four styles.
 
 VIDEO DESCRIPTION:
 {description}
 
-CRITICAL RULES FOR FACTUAL INTEGRITY & STYLE MATCH:
-- Write exactly 2 to 3 sentences per style (strictly between 35 to 80 words total per caption).
-- Each caption must incorporate specific visual details from the video description (such as colors, objects, actions, text, or location) to make it highly relevant and tailored to this specific video.
-- Never invent new facts, exaggerate, or hallucinate.
-- Maintain 100% factual accuracy grounded ONLY in the video description.
-
 STYLES REQUIRED:
-1. **formal**:
-   - Tone: Professional, objective, factual.
-   - Describe what the video shows clearly as if writing for a documentary, news broadcast, or archiving system.
+1. **formal**: Professional, objective, factual tone. Describe what the video shows as if writing for a documentary or news broadcast. Use precise, measured language.
+2. **sarcastic**: Dry, ironic, lightly mocking tone. Find something amusing or underwhelming about the scene and comment on it with subtle wit. Don't be mean-spirited.
+3. **humorous_tech**: Write a funny caption that incorporates technology, programming, or software engineering references/metaphors. Connect the video content to tech concepts (debugging, APIs, git, frameworks, etc.) in a clever way.
+4. **humorous_non_tech**: Write a funny, relatable, everyday humor caption. No technical jargon at all. Think observations a comedian would make about the scene.
 
-2. **sarcastic**:
-   - Tone: Dry irony and lightly mocking.
-   - Comment on the scene or the actions described with subtle, dry wit.
-
-3. **humorous_tech**:
-   - Tone: Funny with natural software engineering/programming humor.
-   - Connect the description content directly to software/system concepts in a clever way (e.g. CI/CD, cache miss, race condition, merge conflict, latency, kernel panic, GPU, thread pool, memory leak, deadlock, stack overflow).
-
-4. **humorous_non_tech**:
-   - Tone: Everyday relatable situational humor.
-   - Describe the scene with funny observations that a comedian would make about the situation.
-   - Do NOT use any technical jargon or programming references.
-
-OUTPUT FORMAT:
-Return ONLY a valid JSON object with keys: "formal", "sarcastic", "humorous_tech", "humorous_non_tech". Do not wrap in markdown or add extra text.
-"""
+RULES:
+- Each caption should be 2-4 sentences (40-120 words)
+- Captions must accurately reflect the VIDEO DESCRIPTION content
+- Each style must feel distinctly different in tone
+- Return ONLY a valid JSON object with exactly these four keys: formal, sarcastic, humorous_tech, humorous_non_tech"""
 
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
@@ -231,60 +207,33 @@ def parse_captions_json(text: str) -> Optional[dict]:
         cleaned = cleaned[:-3]
     cleaned = cleaned.strip()
 
-    parsed = None
     # Try normal json.loads first
     try:
-        parsed = json.loads(cleaned)
+        return json.loads(cleaned)
     except Exception as e:
         logger.warning(f"Standard JSON parse failed: {e}. Trying regex extraction...")
 
-    if not parsed:
-        # Fallback: regex extraction
-        keys = ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]
-        result = {}
-        import re
-        
-        # Try finding each key-value pair using a regex that captures everything inside the quotes
-        for k in keys:
-            pattern = rf'"{k}"\s*:\s*"(.*?)"(?=\s*,\s*"|\s*\}}|\s*$)'
-            match = re.search(pattern, cleaned, re.DOTALL)
-            if match:
-                val = match.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
+    # Fallback: regex extraction
+    keys = ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]
+    result = {}
+    import re
+    
+    # Try finding each key-value pair using a regex that captures everything inside the quotes
+    for k in keys:
+        pattern = rf'"{k}"\s*:\s*"(.*?)"(?=\s*,\s*"|\s*\}}|\s*$)'
+        match = re.search(pattern, cleaned, re.DOTALL)
+        if match:
+            val = match.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
+            result[k] = val
+        else:
+            pattern_alt = rf'[\'"]?{k}[\'"]?\s*:\s*[\'"](.*?)[\'"](?=\s*,\s*[\'"]|\s*\}}|\s*$)'
+            match_alt = re.search(pattern_alt, cleaned, re.DOTALL)
+            if match_alt:
+                val = match_alt.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
                 result[k] = val
-            else:
-                pattern_alt = rf'[\'"]?{k}[\'"]?\s*:\s*[\'"](.*?)[\'"](?=\s*,\s*[\'"]|\s*\}}|\s*$)'
-                match_alt = re.search(pattern_alt, cleaned, re.DOTALL)
-                if match_alt:
-                    val = match_alt.group(1).replace('\\"', '"').replace('\\n', '\n').strip()
-                    result[k] = val
-                    
-        if all(k in result for k in keys):
-            parsed = result
-
-    if parsed:
-        # Normalize Unicode/smart punctuation to standard ASCII
-        replacements = {
-            '—': ' - ',  # Em dash
-            '–': '-',    # En dash
-            '’': "'",    # Smart single quote right
-            '‘': "'",    # Smart single quote left
-            '“': '"',    # Smart double quote left
-            '”': '"',    # Smart double quote right
-            '…': '...',  # Ellipsis
-        }
-        cleaned_parsed = {}
-        for k, v in parsed.items():
-            if isinstance(v, str):
-                v_clean = v
-                for orig, repl in replacements.items():
-                    v_clean = v_clean.replace(orig, repl)
-                while "  " in v_clean:
-                    v_clean = v_clean.replace("  ", " ")
-                cleaned_parsed[k] = v_clean.strip()
-            else:
-                cleaned_parsed[k] = v
-        return cleaned_parsed
-
+                
+    if all(k in result for k in keys):
+        return result
     return None
 
 # ─── Fireworks API Helper ────────────────────────────────────────────────────
@@ -302,8 +251,6 @@ def call_fireworks(model: str, messages: list,
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
-    if "qwen3p7-plus" in model:
-        payload["reasoning_effort"] = "none"
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
 
@@ -469,7 +416,7 @@ async def sse_generator(task_id: str):
                         lambda m=tmodel: call_fireworks(
                             m, style_messages,
                             temperature=0.7, max_tokens=1528,
-                            json_mode=(m != "accounts/fireworks/models/gpt-oss-20b"), timeout=30
+                            json_mode=False, timeout=30
                         )
                     )
                     text = result["choices"][0]["message"]["content"].strip()

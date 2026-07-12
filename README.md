@@ -221,16 +221,11 @@ git push -u origin main
 
 Your agent container must execute autonomously, read tasks from `/input/tasks.json`, and output results to `/output/results.json` within 10 minutes.
 
-### Step A: Build & Tag the Container
-Navigate to the agent folder and build the image locally:
+### Step A: Build the Container
+Navigate to the agent folder and build the image (replace `<docker_username>` with your Docker Hub handle):
 ```bash
 cd describex-agent
-docker build -t describex-agent:latest .
-```
-
-Tag it using the GitHub Container Registry (GHCR) format (replace `YOUR_GITHUB_USERNAME` with your actual GitHub handle):
-```bash
-docker tag describex-agent:latest ghcr.io/YOUR_GITHUB_USERNAME/describex-agent:latest
+docker build -t <docker_username>/describex-agent:latest .
 ```
 
 ### Step B: Run & Test Locally
@@ -244,8 +239,8 @@ New-Item -ItemType Directory -Force -Path input, output
 # 2. Create the test tasks.json file
 Set-Content -Path input/tasks.json -Value '[{"task_id": "v1", "video_url": "https://storage.googleapis.com/amd-hackathon-clips/1860079-uhd_2560_1440_25fps.mp4", "styles": ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]}]'
 
-# 3. Run the docker container mapping volumes
-docker run --rm -v "${PWD}/input:/input" -v "${PWD}/output:/output" describex-agent:latest
+# 3. Run the docker container mapping volumes with the active key
+docker run --env FIREWORKS_API_KEY="fw_YOUR_KEY_HERE" -v "${PWD}/input:/input" -v "${PWD}/output:/output" <docker_username>/describex-agent:latest
 ```
 
 #### For Linux / macOS (Bash):
@@ -255,25 +250,18 @@ mkdir -p input output
 echo '[{"task_id": "v1", "video_url": "https://storage.googleapis.com/amd-hackathon-clips/1860079-uhd_2560_1440_25fps.mp4", "styles": ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]}]' > input/tasks.json
 
 # 2. Run the container mapping volumes
-docker run --rm -v "$(pwd)/input:/input" -v "$(pwd)/output:/output" describex-agent:latest
+docker run --env FIREWORKS_API_KEY="fw_YOUR_KEY_HERE" -v "$(pwd)/input:/input" -v "$(pwd)/output:/output" <docker_username>/describex-agent:latest
 ```
 Check `output/results.json` to verify the generated captions.
 
-### Step C: Log In & Push to GHCR
-Log in to GitHub Container Registry using a GitHub Personal Access Token (PAT) with `write:packages` scope:
+### Step C: Push to Registry
+Once tested, log in to Docker Hub and push your image to the public registry:
 ```bash
-echo "YOUR_GITHUB_PAT" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+docker login
+docker push <docker_username>/describex-agent:latest
 ```
 
-Push your image to the public registry:
-```bash
-docker push ghcr.io/YOUR_GITHUB_USERNAME/describex-agent:latest
-```
-
-> [!IMPORTANT]
-> **Visibility Setting**: Go to your GitHub profile → **Packages** → **describex-agent** → **Package Settings** and change visibility to **Public** so that the judging system can pull the image.
-
-**Your Final Submission URI**: `ghcr.io/YOUR_GITHUB_USERNAME/describex-agent:latest`
+**Your Final Submission URI**: `<docker_username>/describex-agent:latest`
 
 ---
 
@@ -307,4 +295,3 @@ docker push ghcr.io/YOUR_GITHUB_USERNAME/describex-agent:latest
    - **Key**: `VITE_API_URL`
    - **Value**: `https://describex-backend.onrender.com` *(Replace this with your actual Render backend URL)*
 5. Click **Deploy**.
-
